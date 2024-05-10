@@ -123,10 +123,10 @@ def main():
                         else:
                             st.error("Failed to update user information.")
 
-                # if st.button('Logout'):
-                #     st.session_state.logged_in = False
-                #     st.success('You have been logged out.')
-                #     st.rerun()
+                if st.button('Logout'):
+                    st.session_state.logged_in = False
+                    st.success('You have been logged out.')
+                    st.rerun()
 
             
             if st.sidebar.button('Logout'):
