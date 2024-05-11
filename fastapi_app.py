@@ -14,20 +14,28 @@ class Purchase(BaseModel):
     buyer_address: str
 
 class User(BaseModel):
+    id: Optional[int] = None
     username: str
     full_name: str
-    address: str
-    payment_info: str
+    address: Optional[str] = None
+    payment_info: Optional[str] = None
+
+class Product(BaseModel):
+    id: Optional[int] = None
+    name: str
+    category: str
+    price: float
+    thumbnail_url: Optional[str] = None
 
 def create_connection():
-    conn = sqlite3.connect('shopping_mall.db')
-    return conn
+    return sqlite3.connect('shopping_mall.db', check_same_thread=False)
 
-def create_tables(conn):
+def create_tables():
+    conn = create_connection()
     cursor = conn.cursor()
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS users (
-            id INTEGER PRIMARY KEY,
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
             username TEXT UNIQUE,
             password TEXT,
             role TEXT,
@@ -38,7 +46,7 @@ def create_tables(conn):
     ''')
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS products (
-            id INTEGER PRIMARY KEY,
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
             name TEXT UNIQUE,
             category TEXT,
             price REAL,
@@ -47,7 +55,7 @@ def create_tables(conn):
     ''')
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS purchases (
-            id INTEGER PRIMARY KEY,
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
             buyer_id INTEGER,
             product_id INTEGER,
             purchase_time TEXT,
@@ -58,6 +66,7 @@ def create_tables(conn):
         )
     ''')
     conn.commit()
+    conn.close()
 
 def add_user(conn, username, password, role, full_name, address, payment_info):
     cursor = conn.cursor()
@@ -138,25 +147,42 @@ def get_all_purchases(conn):
 
 @app.on_event("startup")
 async def startup_event():
+    create_tables()
     conn = create_connection()
-    create_tables(conn)
-    if not get_user_by_username(conn, "admin"):
-        register_admin(conn, "admin", "admin", "Admin User")
+    cursor = conn.cursor()
+    cursor.execute("SELECT id FROM users WHERE username='admin'")
+    admin_exists = cursor.fetchone()
+    if not admin_exists:
+        cursor.execute("INSERT INTO users (username, password, role, full_name) VALUES ('admin', 'admin', 'admin', 'Admin User')")
+        conn.commit()
     conn.close()
 
-@app.post("/register")
-async def register_user(username: str, password: str, role: str, full_name: str, address: Optional[str] = None, payment_info: Optional[str] = None):
+@app.post("/register", response_model=User)
+async def register_user(user: User, password: str):
     conn = create_connection()
-    result = add_user(conn, username, password, role, full_name, address, payment_info)
-    conn.close()
-    return result
+    cursor = conn.cursor()
+    try:
+        cursor.execute("INSERT INTO users (username, password, role, full_name, address, payment_info) VALUES (?, ?, 'user', ?, ?, ?)",
+                       (user.username, password, user.full_name, user.address, user.payment_info))
+        conn.commit()
+        user_id = cursor.lastrowid
+        return {**user.dict(), "id": user_id}
+    except sqlite3.IntegrityError:
+        raise HTTPException(status_code=400, detail="Username already exists")
+    finally:
+        conn.close()
 
 @app.get("/login")
 async def login(username: str, password: str):
     conn = create_connection()
-    result = authenticate_user(conn, username, password)
+    cursor = conn.cursor()
+    cursor.execute("SELECT id, username, full_name, address, payment_info FROM users WHERE username = ? AND password = ?", (username, password))
+    user = cursor.fetchone()
     conn.close()
-    return result
+    if user:
+        return {"id": user[0], "username": user[1], "full_name": user[2], "address": user[3], "payment_info": user[4]}
+    else:
+        raise HTTPException(status_code=401, detail="Invalid username or password")
 
 @app.get("/products", response_model=List[dict])
 async def get_products():
