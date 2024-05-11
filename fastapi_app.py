@@ -150,7 +150,7 @@ async def startup_event():
     create_tables()
     conn = create_connection()
     cursor = conn.cursor()
-    cursor.execute("SELECT id FROM users WHERE username='admin'")
+    cursor.execute("SELECT id FROM users WHERE role='admin'")
     admin_exists = cursor.fetchone()
     if not admin_exists:
         cursor.execute("INSERT INTO users (username, password, role, full_name) VALUES ('admin', 'admin', 'admin', 'Admin User')")
