@@ -118,7 +118,7 @@ def get_user_by_username(conn, username):
 
 def get_all_users(conn):
     cursor = conn.cursor()
-    cursor.execute('SELECT username, full_name, address, payment_info FROM users')
+    cursor.execute('SELECT * FROM users')
     users = cursor.fetchall()
     return [{"username": user[0], "full_name": user[1], "address": user[2], "payment_info": user[3]} for user in users]
 

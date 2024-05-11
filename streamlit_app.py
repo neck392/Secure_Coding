@@ -132,11 +132,8 @@ def main():
                 try:
                     response = requests.get('http://localhost:8000/users')
                     users = response.json()
-                    if users:
-                        for user in users:
-                            st.write(f"Username: {user['username']}, Full Name: {user['full_name']}, Address: {user['address']}, Payment Info: {user['payment_info']}")
-                    else:
-                        st.write("No users found.")
+                    for user in users:
+                        st.write(f"Username: {user['username']}, Full Name: {user['full_name']}, Address: {user['address']}, Payment Info: {user['payment_info']}")
                 except requests.RequestException as e:
                     st.error(f"Error fetching users: {e}")
 
