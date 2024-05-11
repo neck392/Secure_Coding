@@ -1,12 +1,18 @@
 import streamlit as st
 import requests
+from datetime import datetime
+
+def initialize_session_state():
+    if 'logged_in' not in st.session_state:
+        st.session_state.logged_in = False
+    if 'user' not in st.session_state:
+        st.session_state.user = None
 
 def main():
     st.title('Welcome to Simple Shopping Mall')
     st.write('This is a simple shopping mall where you can buy a variety of products.')
 
-    if 'logged_in' not in st.session_state:
-        st.session_state.logged_in = False
+    initialize_session_state() 
 
     if not st.session_state.logged_in:
         col1, col2 = st.columns(2)
@@ -19,8 +25,8 @@ def main():
                     response = requests.get('http://localhost:8000/login', params={"username": username, "password": password})
                     if response.status_code == 200:
                         st.session_state.logged_in = True
-                        st.session_state.user = response.json()["user"]
-                        st.success(response.json()["message"])
+                        st.session_state.user = response.json()
+                        st.success(f"Welcome back, {st.session_state.user['username']}!")
                         st.experimental_rerun()
                     else:
                         st.error("Invalid username or password.")
@@ -51,8 +57,8 @@ def main():
                 except requests.RequestException as e:
                     st.error(f"Error connecting to server: {e}")
 
-    if st.session_state.logged_in:
-        if st.session_state.user["role"] == 'admin':
+    if st.session_state.logged_in and st.session_state.user is not None:
+        if st.session_state.user.get("role") == 'admin':
             st.sidebar.subheader('Admin Menu')
             menu = ['Home', 'Add Product', 'Delete Product', 'All Purchases Log', 'User Information']
             choice = st.sidebar.selectbox('Menu', menu)
@@ -61,6 +67,7 @@ def main():
                 st.subheader('All Products')
                 try:
                     response = requests.get('http://localhost:8000/products')
+                    response.raise_for_status()
                     products = response.json()
                     for product in products:
                         st.write(f"Name: {product['name']}, Category: {product['category']}, Price: ${product['price']}")
@@ -80,7 +87,7 @@ def main():
                 
                     if submit_button:
                         try:
-                            add_product_response = requests.post('http://localhost:8000/add_product', params={
+                            add_product_response = requests.post('http://localhost:8000/add_product', json={
                                 "name": name,
                                 "category": category,
                                 "price": price,
@@ -97,6 +104,7 @@ def main():
                 st.subheader('Delete a Product')
                 try:
                     response = requests.get('http://localhost:8000/products')
+                    response.raise_for_status()
                     products = response.json()
                     product_names = [product['name'] for product in products]
                     
@@ -118,6 +126,7 @@ def main():
                 st.subheader('All Purchases Log')
                 try:
                     response = requests.get('http://localhost:8000/purchases')
+                    response.raise_for_status()
                     purchases = response.json()
                     if purchases:
                         for purchase in purchases:
@@ -131,6 +140,7 @@ def main():
                 st.subheader('User Information')
                 try:
                     response = requests.get('http://localhost:8000/users')
+                    response.raise_for_status()
                     users = response.json()
                     for user in users:
                         st.write(f"Username: {user['username']}, Full Name: {user['full_name']}, Address: {user['address']}, Payment Info: {user['payment_info']}")
@@ -139,6 +149,7 @@ def main():
 
             if st.sidebar.button('Logout'):
                 st.session_state.logged_in = False
+                st.session_state.user = None
                 st.success('You have been logged out.')
                 st.experimental_rerun()
 
@@ -151,6 +162,7 @@ def main():
                 st.subheader('All Products')
                 try:
                     response = requests.get('http://localhost:8000/products')
+                    response.raise_for_status()
                     products = response.json()
                     for product in products:
                         st.write(f"Name: {product['name']}, Category: {product['category']}, Price: ${product['price']}")
@@ -163,6 +175,7 @@ def main():
                 st.subheader('Buy Products')
                 try:
                     response = requests.get('http://localhost:8000/products')
+                    response.raise_for_status()
                     products = response.json()
                     selected_product = st.selectbox('Select a product', [product['name'] for product in products])
                     user_address = st.text_input('Home Address')
