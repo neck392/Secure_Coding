@@ -83,7 +83,7 @@ def get_all_products(conn):
     cursor = conn.cursor()
     cursor.execute('SELECT * FROM products')
     products = cursor.fetchall()
-    return [{"name": product[1], "category": product[2], "price": product[3], "thumbnail_url": product[4]} for product in products]
+    return [{"id": product[0], "name": product[1], "category": product[2], "price": product[3], "thumbnail_url": product[4]} for product in products]
 
 def add_product(conn, name, category, price, thumbnail_url):
     cursor = conn.cursor()

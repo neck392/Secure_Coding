@@ -119,8 +119,11 @@ def main():
                 try:
                     response = requests.get('http://localhost:8000/purchases')
                     purchases = response.json()
-                    for purchase in purchases:
-                        st.write(f"Buyer ID: {purchase['buyer_id']}, Product ID: {purchase['product_id']}, Purchase Time: {purchase['purchase_time']}, Payment Status: {purchase['payment_status']}, Buyer Address: {purchase['buyer_address']}")
+                    if purchases:
+                        for purchase in purchases:
+                            st.write(f"Buyer ID: {purchase['buyer_id']}, Product ID: {purchase['product_id']}, Purchase Time: {purchase['purchase_time']}, Payment Status: {purchase['payment_status']}, Buyer Address: {purchase['buyer_address']}")
+                    else:
+                        st.write("No purchases found.")
                 except requests.RequestException as e:
                     st.error(f"Error fetching purchases: {e}")
 
@@ -155,8 +158,20 @@ def main():
                     user_address = st.text_input('Home Address')
                     user_payment_info = st.text_input('Payment Info')
                     if st.button('Buy'):
-                        # You can integrate with a payment gateway API here
-                        st.success(f'You have successfully purchased {selected_product}! Address: {user_address}, Payment Info: {user_payment_info}')
+                        try:
+                            purchase_response = requests.post('http://localhost:8000/add_purchase', json={
+                                "buyer_id": st.session_state.user["id"],
+                                "product_id": next(product["id"] for product in products if product["name"] == selected_product),
+                                "purchase_time": datetime.now().isoformat(),
+                                "payment_status": "Completed",
+                                "buyer_address": user_address
+                            })
+                            if purchase_response.status_code == 200:
+                                st.success(f'You have successfully purchased {selected_product}! Address: {user_address}, Payment Info: {user_payment_info}')
+                            else:
+                                st.error("Failed to complete purchase.")
+                        except requests.RequestException as e:
+                            st.error(f"Error connecting to server: {e}")
                 except requests.RequestException as e:
                     st.error(f"Error fetching products: {e}")
 
@@ -200,4 +215,4 @@ def main():
                 st.experimental_rerun()
 
 if __name__ == '__main__':
-    main()
+    main()    
