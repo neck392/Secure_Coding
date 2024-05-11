@@ -24,7 +24,7 @@ def create_tables(conn):
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS products (
             id INTEGER PRIMARY KEY,
-            name TEXT,
+            name TEXT UNIQUE,
             category TEXT,
             price REAL,
             thumbnail_url TEXT
@@ -70,6 +70,14 @@ def add_product(conn, name, category, price, thumbnail_url):
     conn.commit()
     return {"message": "Product added successfully!"}
 
+def delete_product(conn, product_name):
+    cursor = conn.cursor()
+    cursor.execute('DELETE FROM products WHERE name = ?', (product_name,))
+    if cursor.rowcount == 0:
+        raise HTTPException(status_code=404, detail=f"Product '{product_name}' not found")
+    conn.commit()
+    return {"message": f"Product '{product_name}' deleted successfully!"}
+
 def update_user_info(conn, username, full_name, address, payment_info):
     cursor = conn.cursor()
     cursor.execute('UPDATE users SET full_name = ?, address = ?, payment_info = ? WHERE username = ?', (full_name, address, payment_info, username))
@@ -110,14 +118,21 @@ async def get_products():
     conn.close()
     return products
 
-@app.get("/add_product")
+@app.post("/add_product")
 async def add_new_product(name: str, category: str, price: float, thumbnail_url: str):
     conn = create_connection()
     result = add_product(conn, name, category, price, thumbnail_url)
     conn.close()
     return result
 
-@app.get("/update_user_info")
+@app.delete("/products/{product_name}")
+async def delete_product_endpoint(product_name: str):
+    conn = create_connection()
+    result = delete_product(conn, product_name)
+    conn.close()
+    return result
+
+@app.post("/update_user_info")
 async def update_user_info_endpoint(username: str, full_name: str, address: str, payment_info: str):
     conn = create_connection()
     result = update_user_info(conn, username, full_name, address, payment_info)

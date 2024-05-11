@@ -40,7 +40,7 @@ def main():
     if st.session_state.logged_in:
         if st.session_state.user["role"] == 'admin':
             st.sidebar.subheader('Admin Menu')
-            menu = ['Home', 'Add Product']
+            menu = ['Home', 'Add Product', 'Delete Product']
             choice = st.sidebar.selectbox('Menu', menu)
 
             if choice == 'Home':
@@ -60,17 +60,44 @@ def main():
                     price = st.number_input('Price', min_value=0.0)
                     thumbnail_url = st.text_input('Thumbnail URL')
                     submit_button = st.form_submit_button(label='Add')
-                    
+                
                     if submit_button:
-                        add_product_response = requests.get('http://localhost:8000/add_product', params={"name": name, "category": category, "price": price, "thumbnail_url": thumbnail_url})
-                        if add_product_response.status_code == 200:
-                            st.success(add_product_response.json()["message"])
+                        try:
+                            add_product_response = requests.post('http://localhost:8000/add_product', params={
+                                "name": name,
+                                "category": category,
+                                "price": price,
+                                "thumbnail_url": thumbnail_url
+                            })
+                            if add_product_response.status_code == 200:
+                                st.success(add_product_response.json()["message"])
+                            else:
+                                st.error("Failed to add product.")
+                        except requests.RequestException as e:
+                            st.error(f"Error connecting to server: {e}")
+
+            elif choice == 'Delete Product':
+                st.subheader('Delete a Product')
+                response = requests.get('http://localhost:8000/products')
+                products = response.json()
+                product_names = [product['name'] for product in products]
+            
+                selected_product = st.selectbox('Select a product to delete', product_names)
+                if st.button('Delete'):
+                    try:
+                        delete_response = requests.delete(f"http://localhost:8000/products/{selected_product}")
+                        if delete_response.status_code == 200:
+                            st.success(f"Successfully deleted product: {selected_product}")
+                            st.experimental_rerun()
                         else:
-                            st.error("Failed to add product.")
+                            st.error(f"Failed to delete product: {selected_product}")
+                    except requests.RequestException as e:
+                        st.error(f"Error connecting to server: {e}")
+
             if st.sidebar.button('Logout'):
                 st.session_state.logged_in = False
                 st.success('You have been logged out.')
-                st.rerun()
+                st.experimental_rerun()
 
         else:
             st.sidebar.subheader('User Menu')
