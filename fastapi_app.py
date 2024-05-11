@@ -13,6 +13,12 @@ class Purchase(BaseModel):
     payment_status: str
     buyer_address: str
 
+class User(BaseModel):
+    username: str
+    full_name: str
+    address: str
+    payment_info: str
+
 def create_connection():
     conn = sqlite3.connect('shopping_mall.db')
     return conn
@@ -110,6 +116,12 @@ def get_user_by_username(conn, username):
     cursor.execute('SELECT * FROM users WHERE username = ?', (username,))
     return cursor.fetchone()
 
+def get_all_users(conn):
+    cursor = conn.cursor()
+    cursor.execute('SELECT username, full_name, address, payment_info FROM users')
+    users = cursor.fetchall()
+    return [{"username": user[0], "full_name": user[1], "address": user[2], "payment_info": user[3]} for user in users]
+
 def add_purchase(conn, buyer_id, product_id, payment_status, buyer_address):
     cursor = conn.cursor()
     purchase_time = datetime.now().isoformat()
@@ -187,3 +199,10 @@ async def get_purchases():
     purchases = get_all_purchases(conn)
     conn.close()
     return purchases
+
+@app.get("/users", response_model=List[User])
+async def get_users():
+    conn = create_connection()
+    users = get_all_users(conn)
+    conn.close()
+    return users

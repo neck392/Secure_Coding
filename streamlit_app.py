@@ -54,7 +54,7 @@ def main():
     if st.session_state.logged_in:
         if st.session_state.user["role"] == 'admin':
             st.sidebar.subheader('Admin Menu')
-            menu = ['Home', 'Add Product', 'Delete Product', 'All Purchases Log']
+            menu = ['Home', 'Add Product', 'Delete Product', 'All Purchases Log', 'User Information']
             choice = st.sidebar.selectbox('Menu', menu)
 
             if choice == 'Home':
@@ -126,6 +126,19 @@ def main():
                         st.write("No purchases found.")
                 except requests.RequestException as e:
                     st.error(f"Error fetching purchases: {e}")
+
+            elif choice == 'User Information':
+                st.subheader('User Information')
+                try:
+                    response = requests.get('http://localhost:8000/users')
+                    users = response.json()
+                    if users:
+                        for user in users:
+                            st.write(f"Username: {user['username']}, Full Name: {user['full_name']}, Address: {user['address']}, Payment Info: {user['payment_info']}")
+                    else:
+                        st.write("No users found.")
+                except requests.RequestException as e:
+                    st.error(f"Error fetching users: {e}")
 
             if st.sidebar.button('Logout'):
                 st.session_state.logged_in = False
