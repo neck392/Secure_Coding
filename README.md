@@ -27,3 +27,19 @@ Change to the cloned secure_coding directory on the Anaconda Prompt
 streamlit run streamlit_app.py
 uvicorn fastapi_app:app --reload
 ```
+
+## Database
+Database information for testing<br>
+It can be executed by deleting the db extension file and pycache directory.
+
+**Administrator account**
+<ul>
+  <li>ID : admin</li>
+  <li>PW : admin </li>
+</ul>
+
+**User account**
+<ul>
+  <li>ID : test</li>
+  <li>PW : test</li>
+</ul>
