@@ -60,15 +60,8 @@ def main():
                 except requests.RequestException as e:
                     st.error(f"Error connecting to server: {e}")
 
-    # 디버깅 출력을 추가하여 로그인 후 세션 상태 확인
-    st.write(f"Session state before admin check: {st.session_state}")
-
     if st.session_state.logged_in and st.session_state.user is not None:
-        
-        # 'role' 키가 있는지 확인
-        st.write(f"User role: {st.session_state.user.get('role', 'Role not found')}")
-
-        if st.session_state.user['role'] == 'admin':
+        if st.session_state.user.get("role") == 'admin':
             st.sidebar.subheader('Admin Menu')
             menu = ['Home', 'Add Product', 'Delete Product', 'All Purchases Log', 'User Information']
             choice = st.sidebar.selectbox('Menu', menu)
