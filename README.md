@@ -18,6 +18,7 @@ conda create -n secure_coding python=3.9
 conda activate secure_coding
 pip install streamlit
 pip install fastapi uvicorn
+pip install passlib
 ```
 
 ## Run
