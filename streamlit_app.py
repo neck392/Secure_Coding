@@ -7,12 +7,15 @@ def initialize_session_state():
         st.session_state.logged_in = False
     if 'user' not in st.session_state:
         st.session_state.user = None
+    if 'initialized' not in st.session_state:
+        st.session_state.initialized = False
 
 def main():
+    if not st.session_state.initialized:  
+        st.session_state.initialized = True 
+
     st.title('Welcome to Simple Shopping Mall')
     st.write('This is a simple shopping mall where you can buy a variety of products.')
-
-    initialize_session_state() 
 
     if not st.session_state.logged_in:
         col1, col2 = st.columns(2)
@@ -57,8 +60,15 @@ def main():
                 except requests.RequestException as e:
                     st.error(f"Error connecting to server: {e}")
 
+    # 디버깅 출력을 추가하여 로그인 후 세션 상태 확인
+    st.write(f"Session state before admin check: {st.session_state}")
+
     if st.session_state.logged_in and st.session_state.user is not None:
-        if st.session_state.user.get("role") == 'admin':
+        
+        # 'role' 키가 있는지 확인
+        st.write(f"User role: {st.session_state.user.get('role', 'Role not found')}")
+
+        if st.session_state.user['role'] == 'admin':
             st.sidebar.subheader('Admin Menu')
             menu = ['Home', 'Add Product', 'Delete Product', 'All Purchases Log', 'User Information']
             choice = st.sidebar.selectbox('Menu', menu)
@@ -236,6 +246,8 @@ def main():
                 st.session_state.logged_in = False
                 st.success('You have been logged out.')
                 st.experimental_rerun()
+
+initialize_session_state()
 
 if __name__ == '__main__':
     main()    
