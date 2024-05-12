@@ -3,8 +3,11 @@ from typing import List, Optional
 from pydantic import BaseModel
 import sqlite3
 from datetime import datetime
+from passlib.context import CryptContext
 
 app = FastAPI()
+
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 class Purchase(BaseModel):
     buyer_id: int
@@ -68,28 +71,36 @@ def create_tables():
     conn.commit()
     conn.close()
 
+def hash_password(password: str) -> str:
+    return pwd_context.hash(password)
+
+def verify_password(plain_password: str, hashed_password: str) -> bool:
+    return pwd_context.verify(plain_password, hashed_password)
+
 def add_user(conn, username, password, role, full_name, address, payment_info):
     cursor = conn.cursor()
+    hashed_password = hash_password(password)
     cursor.execute('INSERT INTO users (username, password, role, full_name, address, payment_info) VALUES (?, ?, ?, ?, ?, ?)',
-                   (username, password, role, full_name, address, payment_info))
+                   (username, hashed_password, role, full_name, address, payment_info))
     conn.commit()
-    user = {"username": username, "password": password, "role": role, "full_name": full_name, "address": address, "payment_info": payment_info}
+    user = {"username": username, "role": role, "full_name": full_name, "address": address, "payment_info": payment_info}
     return {"message": "User created successfully!", "user": user}
 
 def register_admin(conn, username, password, full_name):
     cursor = conn.cursor()
+    hashed_password = hash_password(password)
     cursor.execute('INSERT INTO users (username, password, role, full_name) VALUES (?, ?, ?, ?)',
-                   (username, password, 'admin', full_name))
+                   (username, hashed_password, 'admin', full_name))
     conn.commit()
-    user = {"username": username, "password": password, "role": 'admin', "full_name": full_name}
+    user = {"username": username, "role": 'admin', "full_name": full_name}
     return {"message": "Admin registered successfully!", "user": user}
 
 def authenticate_user(conn, username, password):
     cursor = conn.cursor()
-    cursor.execute('SELECT * FROM users WHERE username = ? AND password = ?', (username, password))
+    cursor.execute('SELECT * FROM users WHERE username = ?', (username,))
     user = cursor.fetchone()
-    if user:
-        user_info = {"username": user[1], "password": user[2], "role": user[3], "full_name": user[4], "address": user[5], "payment_info": user[6]}
+    if user and verify_password(password, user[2]): # user[2] = hashed password
+        user_info = {"username": user[1], "role": user[3], "full_name": user[4], "address": user[5], "payment_info": user[6]}
         return {"message": f"Welcome back, {username}!", "user": user_info}
     else:
         raise HTTPException(status_code=401, detail="Invalid username or password")
