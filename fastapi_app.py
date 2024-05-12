@@ -22,6 +22,7 @@ class User(BaseModel):
     full_name: str
     address: Optional[str] = None
     payment_info: Optional[str] = None
+    role: str
 
 class Product(BaseModel):
     id: Optional[int] = None
@@ -187,11 +188,18 @@ async def register_user(user: User, password: str):
 async def login(username: str, password: str):
     conn = create_connection()
     cursor = conn.cursor()
-    cursor.execute("SELECT id, username, full_name, address, payment_info FROM users WHERE username = ? AND password = ?", (username, password))
+    cursor.execute('SELECT id, username, full_name, address, payment_info, role FROM users WHERE username = ? AND password = ?', (username, password))
     user = cursor.fetchone()
     conn.close()
     if user:
-        return {"id": user[0], "username": user[1], "full_name": user[2], "address": user[3], "payment_info": user[4]}
+        return {
+            "id": user[0],
+            "username": user[1],
+            "full_name": user[2],
+            "address": user[3],
+            "payment_info": user[4],
+            "role": user[5]
+        }
     else:
         raise HTTPException(status_code=401, detail="Invalid username or password")
 
